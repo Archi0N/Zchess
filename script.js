@@ -146,6 +146,7 @@ const boardElement = DOM_AVAILABLE ? document.getElementById("board") : null;
 const turnIndicatorElement = DOM_AVAILABLE ? document.getElementById("turn-indicator") : null;
 const statusTextElement = DOM_AVAILABLE ? document.getElementById("status-text") : null;
 const moveHistoryElement = DOM_AVAILABLE ? document.getElementById("move-history") : null;
+const historyToggleElement = DOM_AVAILABLE ? document.getElementById("history-toggle") : null;
 const restartButtonElement = DOM_AVAILABLE ? document.getElementById("restart-button") : null;
 const pauseButtonElement = DOM_AVAILABLE ? document.getElementById("pause-button") : null;
 const continueButtonElement = DOM_AVAILABLE ? document.getElementById("continue-button") : null;
@@ -313,7 +314,23 @@ function renderMoveHistory() {
     moveHistoryElement.append(itemElement);
   });
 
-  moveHistoryElement.scrollTop = moveHistoryElement.scrollHeight;
+  if (!moveHistoryElement.hidden) {
+    moveHistoryElement.scrollTop = moveHistoryElement.scrollHeight;
+  }
+}
+
+function toggleMoveHistory() {
+  if (!moveHistoryElement || !historyToggleElement) {
+    return;
+  }
+
+  const shouldShow = moveHistoryElement.hidden;
+  moveHistoryElement.hidden = !shouldShow;
+  historyToggleElement.setAttribute("aria-expanded", shouldShow ? "true" : "false");
+
+  if (shouldShow) {
+    renderMoveHistory();
+  }
 }
 
 function renderStatus() {
@@ -2091,6 +2108,9 @@ if (DOM_AVAILABLE) {
   loadButtonElement.addEventListener("click", loadGame);
   if (undoButtonElement) {
     undoButtonElement.addEventListener("click", undoMove);
+  }
+  if (historyToggleElement) {
+    historyToggleElement.addEventListener("click", toggleMoveHistory);
   }
   window.addEventListener("beforeunload", () => saveGame(true));
   Array.from(modeInputElements).forEach((input) => {

@@ -8,7 +8,7 @@ Zchess is a fully static browser chess game with no build step and no external d
 2. Choose `Local 2 Player` or `Play vs AI`.
 3. White moves first. In AI mode, you control White, the AI controls Black, and you can choose Beginner, Medium, Hard, or Master difficulty.
 4. Click one of your pieces, then click a highlighted legal square to move.
-5. Use `Pause` to freeze the board, `Continue` to resume, `Save` to store the match, `Load` to restore it later, and `Undo Move` to go back. The History panel shows every move played.
+5. Use `Pause` to freeze the board, `Continue` to resume, `Save` to store the match, `Load` to restore it later, and `Undo Move` to go back. Click `History` to show or hide every move played.
 6. In AI mode, `Undo Move` removes both the Black AI reply and your previous White move when possible.
 7. Checkmate ends the game. The turn banner shows `GAME OVER` and the status text shows `White win` or `Black win`.
 

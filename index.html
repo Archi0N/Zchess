@@ -99,8 +99,11 @@
         </section>
 
         <section class="panel history-panel">
-          <h2>History</h2>
-          <ol id="move-history" class="move-history" aria-live="polite" aria-label="Move history">
+          <button id="history-toggle" class="history-toggle" type="button" aria-expanded="false" aria-controls="move-history">
+            <span>History</span>
+            <span aria-hidden="true">▾</span>
+          </button>
+          <ol id="move-history" class="move-history" aria-live="polite" aria-label="Move history" hidden>
             <li class="history-empty">No moves yet.</li>
           </ol>
         </section>

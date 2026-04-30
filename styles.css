@@ -525,15 +525,47 @@ h3 {
   color: var(--text-soft);
 }
 
+.history-panel {
+  align-self: start;
+}
+
+.history-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-strong);
+  cursor: pointer;
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.history-toggle span:last-child {
+  transition: transform 160ms ease;
+}
+
+.history-toggle[aria-expanded="true"] span:last-child {
+  transform: rotate(180deg);
+}
+
 .move-history {
   display: grid;
   gap: 0.55rem;
   max-height: 23rem;
-  margin: 0;
+  margin: 0.85rem 0 0;
   padding: 0;
   list-style: none;
   overflow: auto;
   color: var(--text-soft);
+}
+
+.move-history[hidden] {
+  display: none;
 }
 
 .move-history li {
