@@ -504,7 +504,7 @@ h3 {
 
 .sidebar {
   display: grid;
-  grid-template-columns: minmax(260px, 0.75fr) minmax(320px, 1.25fr);
+  grid-template-columns: minmax(260px, 0.75fr) minmax(280px, 0.7fr) minmax(320px, 1.25fr);
   gap: 1.1rem;
 }
 
@@ -523,6 +523,44 @@ h3 {
   padding-left: 1.15rem;
   line-height: 1.65;
   color: var(--text-soft);
+}
+
+.move-history {
+  display: grid;
+  gap: 0.55rem;
+  max-height: 23rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
+  color: var(--text-soft);
+}
+
+.move-history li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.76), rgba(244, 230, 204, 0.58));
+  border: 1px solid rgba(18, 35, 48, 0.08);
+}
+
+.move-number {
+  min-width: 2rem;
+  font-weight: 800;
+  color: var(--accent-strong);
+}
+
+.move-detail {
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.history-empty {
+  grid-template-columns: 1fr !important;
+  font-style: italic;
 }
 
 .piece-guide {
