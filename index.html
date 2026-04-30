@@ -14,7 +14,7 @@
         <p class="eyebrow">Local duel or sparring AI</p>
         <h1>Zchess</h1>
         <p class="intro">
-          A distilled chess duel on an 8x8 board. Face another player or train against a static Black AI without leaving the page.
+          A fully legal chess duel on an 8x8 board. Face another player or train against a static Black AI without leaving the page.
         </p>
       </div>
       <div class="hero-actions">
@@ -65,11 +65,12 @@
           <ul class="rules-list">
             <li>White moves first. In Play vs AI, you control White and Black replies automatically.</li>
             <li>Click one of your pieces, then a highlighted destination.</li>
-            <li>Captures happen by moving onto an enemy piece's square.</li>
-            <li>Pieces now use chess movement: King, Queen, Rook, Bishop, Knight, and Pawn.</li>
-            <li>There is no castling, en passant, promotion, or check/checkmate system yet.</li>
-            <li>Capture the enemy King to finish the game.</li>
-            <li>When the game ends, it displays GAME OVER and the winner: White win or Black win.</li>
+            <li>Pieces use standard chess movement: pawns move forward, capture diagonally, may advance two squares on their first move, and auto-promote to a Queen on the back rank.</li>
+            <li>Rooks, bishops, and queens slide. Knights jump. Kings move one square, and castling is allowed only when the King and rook are unmoved, the path is clear, and the King does not move through check.</li>
+            <li>En passant is supported immediately after an adjacent pawn makes a two-square advance.</li>
+            <li>You cannot make a move that leaves your own King in check. Kings are not captured as legal moves.</li>
+            <li>Checks are announced in the status bar. Checkmate ends the game with GAME OVER and the winner text: White win or Black win.</li>
+            <li>If no legal move exists without check, the game is a stalemate draw.</li>
             <li>Use Pause to freeze the board, Continue to resume, Save to store progress, and Load to continue later.</li>
           </ul>
         </section>
@@ -81,7 +82,7 @@
               <span class="guide-badge" aria-hidden="true">♔</span>
               <div>
                 <h3>King</h3>
-                <p>Moves 1 square in any direction. If it falls, the match ends.</p>
+                <p>Moves 1 square in any direction and may castle if neither the King nor rook has moved and the route is safe.</p>
               </div>
             </article>
             <article class="guide-card">
@@ -116,7 +117,7 @@
               <span class="guide-badge" aria-hidden="true">♙</span>
               <div>
                 <h3>Pawn</h3>
-                <p>Moves forward 1, may advance 2 from its starting row, and captures diagonally.</p>
+                <p>Moves forward 1, may advance 2 from its starting row, captures diagonally, promotes to a Queen, and can use en passant.</p>
               </div>
             </article>
           </div>

@@ -1,44 +1,54 @@
 # Zchess
 
-Zchess is a small browser tactics game inspired by chess. It stays fully static with no build step and no external dependencies, and now supports both local two-player play and a simple training AI.
+Zchess is a fully static browser chess game with no build step and no external dependencies. It supports local two-player play, a simple Black AI, browser save/load, pause/continue, and GitHub Pages deployment.
 
 ## How to Play
 
 1. Open `index.html` in a browser.
 2. Choose `Local 2 Player` or `Play vs AI`.
 3. White moves first. In AI mode, you control White and the AI controls Black.
-4. Click one of your pieces, then click a highlighted square to move.
-5. Capture by landing on an opposing piece.
-6. Use `Pause` to freeze the board, `Continue` to resume, `Save` to store the match, and `Load` to restore it later.
-7. Win by capturing the enemy `King`, or by leaving your opponent with no legal move. When the match ends, the screen shows `GAME OVER` and either `White win` or `Black win`.
+4. Click one of your pieces, then click a highlighted legal square to move.
+5. Use `Pause` to freeze the board, `Continue` to resume, `Save` to store the match, and `Load` to restore it later.
+6. Checkmate ends the game. The turn banner shows `GAME OVER` and the status text shows `White win` or `Black win`.
 
-## Piece Set
+## Rules Implemented
 
-- `King`: Moves 1 square in any direction.
-- `Queen`: Moves any distance horizontally, vertically, or diagonally.
-- `Rook`: Moves any distance horizontally or vertically.
-- `Bishop`: Moves any distance diagonally.
-- `Knight`: Moves in an L shape and can jump.
-- `Pawn`: Moves forward 1, can move forward 2 from its starting row, and captures diagonally.
+- Standard starting setup with `rook knight bishop queen king bishop knight rook` on each back rank.
+- Real chess movement for `King`, `Queen`, `Rook`, `Bishop`, `Knight`, and `Pawn`.
+- Pawn single move, opening double move, diagonal capture, auto-promotion to `Queen`, and en passant.
+- Castling only when the King and rook are unmoved, the path is clear, the King is not in check, and it does not cross or land on an attacked square.
+- Legal-move filtering so you cannot leave your own King in check.
+- Check detection and checkmate detection.
+- Stalemate detection when the side to move has no legal move but is not in check.
 
-## Notes
+## AI Behavior
 
-- Movement follows normal chess piece movement, but there is no check/checkmate, castling, en passant, or promotion yet.
-- The UI includes legal move highlighting, chess-style Unicode piece symbols, turn/status text, capture handling, a mode toggle, pause/continue, save/load, and restart controls.
-- In `Play vs AI`, Black replies automatically after your move and the board is disabled while the AI is thinking.
-- Games are saved in browser `localStorage`, so you can close the page and continue later on the same browser.
-- Layout is responsive and works without a build tool.
+- In `Play vs AI`, Black only chooses from legal moves.
+- The AI prefers checkmate or winning moves first, then strong captures, then checking moves, then positional heuristics with a small random tiebreak.
+
+## Save Compatibility
+
+- Saves are stored in browser `localStorage`.
+- The current save format is versioned.
+- Older saves with the legacy internal piece names are migrated when possible.
+- If a saved game is incompatible with the legal-chess engine, Zchess starts a new game instead of crashing.
 
 ## Files
 
-- `index.html`: App structure and rules content.
+- `index.html`: App structure and on-page rules text.
 - `styles.css`: Responsive styling for the board and panels.
-- `script.js`: Board state, move generation, turn flow, and win detection.
+- `script.js`: Chess engine, UI state, AI logic, save migration, and embedded self-tests.
 
 ## Verification
 
-Run a basic JavaScript syntax check with Node:
+Run the syntax check:
 
 ```bash
 node --check script.js
+```
+
+Run the embedded pure-JavaScript rule tests:
+
+```bash
+node -e "const chess = require('./script.js'); console.log(chess.runSelfTests())"
 ```
