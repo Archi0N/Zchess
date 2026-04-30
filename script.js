@@ -145,8 +145,6 @@ const STORAGE_AVAILABLE = typeof localStorage !== "undefined";
 const boardElement = DOM_AVAILABLE ? document.getElementById("board") : null;
 const turnIndicatorElement = DOM_AVAILABLE ? document.getElementById("turn-indicator") : null;
 const statusTextElement = DOM_AVAILABLE ? document.getElementById("status-text") : null;
-const moveHistoryElement = DOM_AVAILABLE ? document.getElementById("move-history") : null;
-const historyToggleElement = DOM_AVAILABLE ? document.getElementById("history-toggle") : null;
 const restartButtonElement = DOM_AVAILABLE ? document.getElementById("restart-button") : null;
 const pauseButtonElement = DOM_AVAILABLE ? document.getElementById("pause-button") : null;
 const continueButtonElement = DOM_AVAILABLE ? document.getElementById("continue-button") : null;
@@ -177,7 +175,6 @@ const state = {
   aiTimerId: null,
   enPassantTarget: null,
   halfmoveClock: 0,
-  moveHistory: [],
   gameHistory: [],
 };
 
@@ -230,7 +227,6 @@ function createHistorySnapshot() {
     isPaused: state.isPaused,
     enPassantTarget: state.enPassantTarget ? { ...state.enPassantTarget } : null,
     halfmoveClock: state.halfmoveClock || 0,
-    moveHistory: state.moveHistory.map((entry) => ({ ...entry })),
   };
 }
 
@@ -247,9 +243,6 @@ function restoreHistorySnapshot(snapshot) {
   state.isAiThinking = false;
   state.enPassantTarget = snapshot.enPassantTarget || null;
   state.halfmoveClock = snapshot.halfmoveClock || 0;
-  state.moveHistory = Array.isArray(snapshot.moveHistory)
-    ? snapshot.moveHistory.map((entry) => ({ ...entry }))
-    : [];
   clearSelection();
 }
 
@@ -267,7 +260,6 @@ function resetGame() {
   state.isPaused = false;
   state.enPassantTarget = null;
   state.halfmoveClock = 0;
-  state.moveHistory = [];
   state.gameHistory = [];
   syncModeInputs();
   saveGame(true);
@@ -282,55 +274,6 @@ function render() {
   renderStatus();
   renderControls();
   renderBoard();
-  renderMoveHistory();
-}
-
-function renderMoveHistory() {
-  if (!moveHistoryElement) {
-    return;
-  }
-
-  moveHistoryElement.textContent = "";
-
-  if (!state.moveHistory.length) {
-    const emptyElement = document.createElement("li");
-    emptyElement.className = "history-empty";
-    emptyElement.textContent = "No moves yet.";
-    moveHistoryElement.append(emptyElement);
-    return;
-  }
-
-  state.moveHistory.forEach((entry, index) => {
-    const itemElement = document.createElement("li");
-    const numberElement = document.createElement("span");
-    const detailElement = document.createElement("span");
-
-    numberElement.className = "move-number";
-    numberElement.textContent = `${index + 1}.`;
-    detailElement.className = "move-detail";
-    detailElement.textContent = entry.text;
-
-    itemElement.append(numberElement, detailElement);
-    moveHistoryElement.append(itemElement);
-  });
-
-  if (!moveHistoryElement.hidden) {
-    moveHistoryElement.scrollTop = moveHistoryElement.scrollHeight;
-  }
-}
-
-function toggleMoveHistory() {
-  if (!moveHistoryElement || !historyToggleElement) {
-    return;
-  }
-
-  const shouldShow = moveHistoryElement.hidden;
-  moveHistoryElement.hidden = !shouldShow;
-  historyToggleElement.setAttribute("aria-expanded", shouldShow ? "true" : "false");
-
-  if (shouldShow) {
-    renderMoveHistory();
-  }
 }
 
 function renderStatus() {
@@ -524,8 +467,6 @@ function applyMove(from, move) {
   state.isAiThinking = false;
   clearSelection();
 
-  state.moveHistory.push(createMoveHistoryEntry(analysis));
-
   if (analysis.checkmate) {
     setWinner(analysis.movingPiece.side);
     saveGame(true);
@@ -595,43 +536,6 @@ function buildMoveStatus(analysis) {
   }
 
   return segments.join(" ");
-}
-
-function createMoveHistoryEntry(analysis) {
-  const pieceName = PIECES[analysis.movingPiece.type].name;
-  const from = toCoordinate(analysis.from.row, analysis.from.col);
-  const to = toCoordinate(analysis.move.row, analysis.move.col);
-  const side = capitalize(analysis.movingPiece.side);
-  const suffixes = [];
-
-  if (analysis.move.castle) {
-    suffixes.push(analysis.move.castle.side === "king" ? "castled kingside" : "castled queenside");
-  } else {
-    suffixes.push(`${pieceName} ${from} → ${to}`);
-  }
-
-  if (analysis.capturedPiece) {
-    suffixes.push(`captured ${PIECES[analysis.capturedPiece.type].name}`);
-  }
-
-  if (analysis.move.enPassant) {
-    suffixes.push("en passant");
-  }
-
-  if (analysis.move.promotion) {
-    suffixes.push("promoted to Queen");
-  }
-
-  if (analysis.checkmate) {
-    suffixes.push("checkmate");
-  } else if (analysis.check) {
-    suffixes.push("check");
-  }
-
-  return {
-    side: analysis.movingPiece.side,
-    text: `${side}: ${suffixes.join(" • ")}`,
-  };
 }
 
 function clearSelection() {
@@ -1555,7 +1459,6 @@ function serializeGame() {
     isPaused: state.isPaused,
     enPassantTarget: state.enPassantTarget,
     halfmoveClock: state.halfmoveClock,
-    moveHistory: state.moveHistory,
     gameHistory: state.gameHistory,
     savedAt: new Date().toISOString(),
   };
@@ -1644,7 +1547,6 @@ function loadGame() {
     state.isAiThinking = false;
     state.enPassantTarget = migrated.enPassantTarget;
     state.halfmoveClock = migrated.halfmoveClock;
-    state.moveHistory = migrated.moveHistory;
     state.gameHistory = migrated.gameHistory;
     syncModeInputs();
 
@@ -1711,7 +1613,6 @@ function migrateSaveData(saved) {
     enPassantTarget: normalizeEnPassantTarget(saved.enPassantTarget, board)
       || inferLegacyEnPassantTarget(board, saved.lastMove),
     halfmoveClock: normalizeHalfmoveClock(saved.halfmoveClock),
-    moveHistory: normalizeMoveHistory(saved.moveHistory),
     gameHistory: normalizeGameHistory(saved.gameHistory),
   };
 }
@@ -1848,29 +1749,9 @@ function normalizeGameHistory(history) {
       isPaused: Boolean(snapshot.isPaused),
       enPassantTarget: normalizeEnPassantTarget(snapshot.enPassantTarget, board),
       halfmoveClock: normalizeHalfmoveClock(snapshot.halfmoveClock),
-      moveHistory: normalizeMoveHistory(snapshot.moveHistory),
     });
 
     return snapshots;
-  }, []);
-}
-
-function normalizeMoveHistory(history) {
-  if (!Array.isArray(history)) {
-    return [];
-  }
-
-  return history.reduce((entries, entry) => {
-    if (!entry || typeof entry !== "object" || typeof entry.text !== "string") {
-      return entries;
-    }
-
-    entries.push({
-      side: normalizeSide(entry.side) || "white",
-      text: entry.text.slice(0, 140),
-    });
-
-    return entries;
   }, []);
 }
 
@@ -2108,9 +1989,6 @@ if (DOM_AVAILABLE) {
   loadButtonElement.addEventListener("click", loadGame);
   if (undoButtonElement) {
     undoButtonElement.addEventListener("click", undoMove);
-  }
-  if (historyToggleElement) {
-    historyToggleElement.addEventListener("click", toggleMoveHistory);
   }
   window.addEventListener("beforeunload", () => saveGame(true));
   Array.from(modeInputElements).forEach((input) => {
