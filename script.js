@@ -174,6 +174,7 @@ const state = {
   isAiThinking: false,
   aiTimerId: null,
   enPassantTarget: null,
+  halfmoveClock: 0,
   gameHistory: [],
 };
 
@@ -213,6 +214,7 @@ function getGameSnapshot(sourceState = state) {
     winner: sourceState.winner,
     lastMove: sourceState.lastMove,
     enPassantTarget: sourceState.enPassantTarget,
+    halfmoveClock: sourceState.halfmoveClock || 0,
   };
 }
 
@@ -224,6 +226,7 @@ function createHistorySnapshot() {
     lastMove: state.lastMove ? JSON.parse(JSON.stringify(state.lastMove)) : null,
     isPaused: state.isPaused,
     enPassantTarget: state.enPassantTarget ? { ...state.enPassantTarget } : null,
+    halfmoveClock: state.halfmoveClock || 0,
   };
 }
 
@@ -239,6 +242,7 @@ function restoreHistorySnapshot(snapshot) {
   state.isPaused = Boolean(snapshot.isPaused);
   state.isAiThinking = false;
   state.enPassantTarget = snapshot.enPassantTarget || null;
+  state.halfmoveClock = snapshot.halfmoveClock || 0;
   clearSelection();
 }
 
@@ -255,6 +259,7 @@ function resetGame() {
   state.lastMove = null;
   state.isPaused = false;
   state.enPassantTarget = null;
+  state.halfmoveClock = 0;
   state.gameHistory = [];
   syncModeInputs();
   saveGame(true);
@@ -457,6 +462,7 @@ function applyMove(from, move) {
   state.board = analysis.game.board;
   state.currentPlayer = analysis.game.currentPlayer;
   state.enPassantTarget = analysis.game.enPassantTarget;
+  state.halfmoveClock = analysis.game.halfmoveClock;
   state.lastMove = analysis.game.lastMove;
   state.isAiThinking = false;
   clearSelection();
@@ -470,6 +476,14 @@ function applyMove(from, move) {
 
   if (analysis.stalemate) {
     setWinner("draw");
+    saveGame(true);
+    render();
+    return;
+  }
+
+  if (analysis.fiftyMoveDraw) {
+    setWinner("draw");
+    state.status = "Draw by 50-move rule.";
     saveGame(true);
     render();
     return;
@@ -822,7 +836,14 @@ function getKingMoves(game, row, col, piece) {
 function applyMoveToGame(game, from, move) {
   const board = cloneBoard(game.board);
   const movingPiece = board[from.row][from.col];
+  const captureSquare = move.enPassant ? move.captureSquare : { row: move.row, col: move.col };
+  const capturedPiece = move.capture && captureSquare
+    ? board[captureSquare.row][captureSquare.col]
+    : null;
   const nextPiece = { ...movingPiece, moved: true };
+  const halfmoveClock = movingPiece.type === "pawn" || capturedPiece
+    ? 0
+    : (game.halfmoveClock || 0) + 1;
 
   board[from.row][from.col] = null;
 
@@ -856,6 +877,7 @@ function applyMoveToGame(game, from, move) {
       from: { row: from.row, col: from.col },
       to: { row: move.row, col: move.col },
     },
+    halfmoveClock,
     enPassantTarget: movingPiece.type === "pawn" && Math.abs(move.row - from.row) === 2
       ? {
           row: from.row + (move.row - from.row) / 2,
@@ -893,6 +915,7 @@ function evaluateMoveOutcome(game, from, move) {
     check,
     checkmate: check && legalReplies.length === 0,
     stalemate: !check && legalReplies.length === 0,
+    fiftyMoveDraw: nextGame.halfmoveClock >= 100,
   };
 }
 
@@ -1435,6 +1458,7 @@ function serializeGame() {
     lastMove: state.lastMove,
     isPaused: state.isPaused,
     enPassantTarget: state.enPassantTarget,
+    halfmoveClock: state.halfmoveClock,
     gameHistory: state.gameHistory,
     savedAt: new Date().toISOString(),
   };
@@ -1522,6 +1546,7 @@ function loadGame() {
     state.isPaused = migrated.isPaused;
     state.isAiThinking = false;
     state.enPassantTarget = migrated.enPassantTarget;
+    state.halfmoveClock = migrated.halfmoveClock;
     state.gameHistory = migrated.gameHistory;
     syncModeInputs();
 
@@ -1540,11 +1565,11 @@ function loadGame() {
             : "Saved game loaded. Continue playing.";
       }
     } else {
-      state.status = state.winner === "white"
+      state.status = migrated.status || (state.winner === "white"
         ? "White win"
         : state.winner === "black"
           ? "Black win"
-          : "Stalemate.";
+          : "Stalemate.");
     }
 
     if (entry.key !== SAVE_KEY || saved.version !== SAVE_VERSION) {
@@ -1582,10 +1607,12 @@ function migrateSaveData(saved) {
     mode: saved.mode === "ai" ? "ai" : "local",
     aiDifficulty: AI_DIFFICULTY_LEVELS[saved.aiDifficulty] ? saved.aiDifficulty : "beginner",
     winner: ["white", "black", "draw"].includes(saved.winner) ? saved.winner : null,
+    status: typeof saved.status === "string" ? saved.status.slice(0, 160) : null,
     lastMove: normalizeLastMove(saved.lastMove),
     isPaused: Boolean(saved.isPaused),
     enPassantTarget: normalizeEnPassantTarget(saved.enPassantTarget, board)
       || inferLegacyEnPassantTarget(board, saved.lastMove),
+    halfmoveClock: normalizeHalfmoveClock(saved.halfmoveClock),
     gameHistory: normalizeGameHistory(saved.gameHistory),
   };
 }
@@ -1721,6 +1748,7 @@ function normalizeGameHistory(history) {
       lastMove: normalizeLastMove(snapshot.lastMove),
       isPaused: Boolean(snapshot.isPaused),
       enPassantTarget: normalizeEnPassantTarget(snapshot.enPassantTarget, board),
+      halfmoveClock: normalizeHalfmoveClock(snapshot.halfmoveClock),
     });
 
     return snapshots;
@@ -1739,6 +1767,10 @@ function normalizeSquare(square) {
 
 function normalizeIndex(value) {
   return Number.isInteger(value) && value >= 0 && value < BOARD_SIZE ? value : null;
+}
+
+function normalizeHalfmoveClock(value) {
+  return Number.isInteger(value) && value >= 0 ? value : 0;
 }
 
 function normalizeEnPassantTarget(target, board) {
@@ -1807,6 +1839,7 @@ function createTestGame(pieces, currentPlayer = "white", extra = {}) {
     winner: null,
     lastMove: extra.lastMove || null,
     enPassantTarget: extra.enPassantTarget || null,
+    halfmoveClock: normalizeHalfmoveClock(extra.halfmoveClock),
   };
 }
 
@@ -1831,6 +1864,7 @@ function runSelfTests() {
       winner: null,
       lastMove: null,
       enPassantTarget: null,
+      halfmoveClock: 0,
     };
     assert(board[0].map((piece) => piece.type).join(",") === STARTING_BACK_RANK.join(","), "Back rank setup is wrong.");
     assert(board[7][4].type === "king" && board[0][4].type === "king", "Kings are not on e-file.");
@@ -1928,6 +1962,20 @@ function runSelfTests() {
     const outcome = evaluateMoveOutcome(game, { row: 1, col: 0 }, move);
     assert(outcome.game.board[0][0].type === "queen", "Pawn should auto-promote to a queen.");
     results.push("promotion");
+  }
+
+  {
+    const game = createTestGame([
+      { row: 7, col: 4, type: "king", side: "white" },
+      { row: 0, col: 4, type: "king", side: "black" },
+      { row: 0, col: 0, type: "rook", side: "black", moved: true },
+    ], "black", { halfmoveClock: 99 });
+    const move = getLegalMoves(game, 0, 0).find((candidate) => candidate.row === 0 && candidate.col === 1);
+    assert(move, "Rook should have a quiet move for the 50-move test.");
+    const outcome = evaluateMoveOutcome(game, { row: 0, col: 0 }, move);
+    assert(outcome.game.halfmoveClock === 100, "Quiet non-pawn moves should advance the halfmove clock.");
+    assert(outcome.fiftyMoveDraw, "100 halfmoves should trigger the 50-move draw rule.");
+    results.push("fifty-move-rule");
   }
 
   return results;

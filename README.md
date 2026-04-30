@@ -21,6 +21,7 @@ Zchess is a fully static browser chess game with no build step and no external d
 - Legal-move filtering so you cannot leave your own King in check.
 - Check detection and checkmate detection.
 - Stalemate detection when the side to move has no legal move but is not in check.
+- 50-move rule draw after 100 halfmoves / 50 moves by each player with no pawn move and no capture.
 
 ## AI Behavior
 
