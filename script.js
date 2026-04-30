@@ -39,8 +39,8 @@ const STARTING_BACK_RANK = [
 
 const PIECES = {
   crown: {
-    name: "Crown",
-    short: "Cr",
+    name: "King",
+    short: "K",
     value: 1000,
     symbols: {
       white: "♔",
@@ -48,8 +48,8 @@ const PIECES = {
     },
   },
   runeblade: {
-    name: "Runeblade",
-    short: "Rb",
+    name: "Queen",
+    short: "Q",
     value: 8,
     symbols: {
       white: "♕",
@@ -57,8 +57,8 @@ const PIECES = {
     },
   },
   bastion: {
-    name: "Bastion",
-    short: "Ba",
+    name: "Rook",
+    short: "R",
     value: 5,
     symbols: {
       white: "♖",
@@ -66,8 +66,8 @@ const PIECES = {
     },
   },
   seer: {
-    name: "Seer",
-    short: "Se",
+    name: "Bishop",
+    short: "B",
     value: 4,
     symbols: {
       white: "♗",
@@ -84,8 +84,8 @@ const PIECES = {
     },
   },
   rune: {
-    name: "Rune",
-    short: "Ru",
+    name: "Pawn",
+    short: "P",
     value: 1,
     symbols: {
       white: "♙",
@@ -110,7 +110,7 @@ const state = {
   selected: null,
   legalMoves: [],
   mode: "local",
-  status: "White opens the ritual.",
+  status: "White moves first.",
   winner: null,
   lastMove: null,
   isPaused: false,
@@ -162,7 +162,7 @@ function render() {
 
 function renderStatus() {
   if (state.winner) {
-    turnIndicatorElement.textContent = `${getSideLabel(state.winner)} wins`;
+    turnIndicatorElement.textContent = "GAME OVER";
   } else if (state.isPaused) {
     turnIndicatorElement.textContent = "Paused";
   } else if (state.isAiThinking) {
@@ -321,8 +321,7 @@ function applyMove(from, move) {
   state.isAiThinking = false;
 
   if (targetPiece && targetPiece.type === "crown") {
-    state.winner = movingPiece.side;
-    state.status = `${mover} ${movingPieceName} captured the Crown on ${destination}.`;
+    setWinner(movingPiece.side);
     saveGame(true);
     render();
     return;
@@ -333,8 +332,7 @@ function applyMove(from, move) {
   state.currentPlayer = nextPlayer;
 
   if (!playerHasLegalMoves(nextPlayer)) {
-    state.winner = movingPiece.side;
-    state.status = `${mover} ${movingPieceName} moved to ${destination} and left ${responder} with no legal reply.`;
+    setWinner(movingPiece.side);
     saveGame(true);
     render();
     return;
@@ -364,6 +362,12 @@ function applyMove(from, move) {
 function clearSelection() {
   state.selected = null;
   state.legalMoves = [];
+}
+
+function setWinner(side) {
+  state.winner = side;
+  state.isAiThinking = false;
+  state.status = side === "white" ? "White win" : "Black win";
 }
 
 function findMove(row, col) {
@@ -414,7 +418,7 @@ function getLegalMoves(row, col) {
     case "crown":
       return getDirectionalMoves(row, col, piece.side, DIRECTIONS_ALL, 1);
     case "runeblade":
-      return getDirectionalMoves(row, col, piece.side, DIRECTIONS_ALL, 2);
+      return getDirectionalMoves(row, col, piece.side, DIRECTIONS_ALL, BOARD_SIZE);
     case "bastion":
       return getDirectionalMoves(row, col, piece.side, DIRECTIONS_ORTHOGONAL, BOARD_SIZE);
     case "seer":
@@ -547,8 +551,8 @@ function capitalize(value) {
 
 function getOpeningStatus() {
   return state.mode === "ai"
-    ? "White opens the ritual. Black AI awaits your move."
-    : "White opens the ritual.";
+    ? "White moves first. Black AI awaits your move."
+    : "White moves first.";
 }
 
 function getSideLabel(side) {
@@ -589,8 +593,7 @@ function performAiTurn() {
   state.isAiThinking = false;
 
   if (!choice) {
-    state.winner = "white";
-    state.status = "White wins. Black (AI) has no legal move.";
+    setWinner("white");
     saveGame(true);
     render();
     return;

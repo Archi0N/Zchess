@@ -50,7 +50,7 @@
           </div>
           <div class="status-card status-wide">
             <span class="status-label">Status</span>
-            <strong id="status-text" aria-live="polite" aria-atomic="true">White opens the ritual.</strong>
+            <strong id="status-text" aria-live="polite" aria-atomic="true">White moves first.</strong>
           </div>
         </div>
 
@@ -66,9 +66,10 @@
             <li>White moves first. In Play vs AI, you control White and Black replies automatically.</li>
             <li>Click one of your pieces, then a highlighted destination.</li>
             <li>Captures happen by moving onto an enemy piece's square.</li>
-            <li>There is no check, castling, or en passant. The Crown can be attacked directly.</li>
-            <li>Capture the enemy Crown to win instantly.</li>
-            <li>If your opponent starts a turn with no legal move, you also win.</li>
+            <li>Pieces now use chess movement: King, Queen, Rook, Bishop, Knight, and Pawn.</li>
+            <li>There is no castling, en passant, promotion, or check/checkmate system yet.</li>
+            <li>Capture the enemy King to finish the game.</li>
+            <li>When the game ends, it displays GAME OVER and the winner: White win or Black win.</li>
             <li>Use Pause to freeze the board, Continue to resume, Save to store progress, and Load to continue later.</li>
           </ul>
         </section>
@@ -79,28 +80,28 @@
             <article class="guide-card">
               <span class="guide-badge" aria-hidden="true">♔</span>
               <div>
-                <h3>Crown</h3>
+                <h3>King</h3>
                 <p>Moves 1 square in any direction. If it falls, the match ends.</p>
               </div>
             </article>
             <article class="guide-card">
               <span class="guide-badge" aria-hidden="true">♕</span>
               <div>
-                <h3>Runeblade</h3>
-                <p>Moves up to 2 squares in any direction, without jumping.</p>
+                <h3>Queen</h3>
+                <p>Slides any number of squares horizontally, vertically, or diagonally.</p>
               </div>
             </article>
             <article class="guide-card">
               <span class="guide-badge" aria-hidden="true">♖</span>
               <div>
-                <h3>Bastion</h3>
+                <h3>Rook</h3>
                 <p>Slides any number of squares horizontally or vertically.</p>
               </div>
             </article>
             <article class="guide-card">
               <span class="guide-badge" aria-hidden="true">♗</span>
               <div>
-                <h3>Seer</h3>
+                <h3>Bishop</h3>
                 <p>Slides any number of squares diagonally.</p>
               </div>
             </article>
@@ -114,7 +115,7 @@
             <article class="guide-card">
               <span class="guide-badge" aria-hidden="true">♙</span>
               <div>
-                <h3>Rune</h3>
+                <h3>Pawn</h3>
                 <p>Moves forward 1, may advance 2 from its starting row, and captures diagonally.</p>
               </div>
             </article>
