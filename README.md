@@ -24,11 +24,7 @@ Zchess is a fully static browser chess game with no build step and no external d
 ## AI Behavior
 
 - In `Play vs AI`, Black only chooses from legal moves.
-- Difficulty levels:
-  - `Beginner`: Very Easy, depth 1, high random move chance.
-  - `Medium`: Easy, depth 2, moderate random move chance.
-  - `Hard`: Hard, depth 3, low random move chance.
-  - `Master`: Very Hard, depth 4, no random move chance.
+- Difficulty levels: `Beginner`, `Medium`, `Hard`, and `Master`.
 - The AI prefers checkmate or winning moves first, then strong captures, then checking moves, then positional heuristics.
 
 ## Save Compatibility

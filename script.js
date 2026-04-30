@@ -150,6 +150,7 @@ const pauseButtonElement = DOM_AVAILABLE ? document.getElementById("pause-button
 const continueButtonElement = DOM_AVAILABLE ? document.getElementById("continue-button") : null;
 const saveButtonElement = DOM_AVAILABLE ? document.getElementById("save-button") : null;
 const loadButtonElement = DOM_AVAILABLE ? document.getElementById("load-button") : null;
+const difficultySwitchElement = DOM_AVAILABLE ? document.getElementById("difficulty-switch") : null;
 const modeInputElements = DOM_AVAILABLE
   ? document.querySelectorAll('input[name="game-mode"]')
   : [];
@@ -1290,6 +1291,10 @@ function syncModeInputs() {
     input.checked = input.value === state.mode;
   });
 
+  if (difficultySwitchElement) {
+    difficultySwitchElement.hidden = state.mode !== "ai";
+  }
+
   syncDifficultyInputs();
 }
 
@@ -1321,7 +1326,7 @@ function setAIDifficulty(level) {
 
   state.aiDifficulty = level;
   const difficulty = getSelectedAIDifficulty();
-  state.status = `AI Level: ${difficulty.name}. Mode: ${difficulty.description}.`;
+  state.status = `AI Level: ${difficulty.name}.`;
   saveGame(true);
   syncDifficultyInputs();
   render();
