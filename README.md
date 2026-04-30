@@ -1,10 +1,10 @@
 # Zchess
 
-Zchess is a fully static browser chess game with no build step and no external dependencies. It supports local two-player play, a simple Black AI, browser save/load, pause/continue, and GitHub Pages deployment.
+Zchess is a fully static installable browser chess app with no build step and no external dependencies. It supports local two-player play, a simple Black AI, browser save/load, pause/continue, offline caching, and GitHub Pages deployment.
 
 ## How to Play
 
-1. Open `index.html` in a browser.
+1. Open `index.html` in a browser, or visit the GitHub Pages link and use your browser's `Install app` / `Add to Home screen` option.
 2. Choose `Local 2 Player` or `Play vs AI`.
 3. White moves first. In AI mode, you control White, the AI controls Black, and you can choose Beginner, Medium, Hard, or Master difficulty.
 4. Click one of your pieces, then click a highlighted legal square to move.
@@ -40,7 +40,10 @@ Zchess is a fully static browser chess game with no build step and no external d
 
 - `index.html`: App structure and on-page rules text.
 - `styles.css`: Responsive styling for the board and panels.
-- `script.js`: Chess engine, UI state, AI logic, undo history, save migration, and embedded self-tests.
+- `script.js`: Chess engine, UI state, AI logic, undo history, save migration, app registration, and embedded self-tests.
+- `manifest.webmanifest`: Installable app metadata.
+- `sw.js`: Offline cache service worker.
+- `icons/`: App icons.
 
 ## Verification
 

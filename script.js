@@ -1981,6 +1981,12 @@ function runSelfTests() {
   return results;
 }
 
+if (WINDOW_AVAILABLE && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+
 if (DOM_AVAILABLE) {
   restartButtonElement.addEventListener("click", resetGame);
   pauseButtonElement.addEventListener("click", pauseGame);
