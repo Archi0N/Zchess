@@ -150,6 +150,7 @@ const pauseButtonElement = DOM_AVAILABLE ? document.getElementById("pause-button
 const continueButtonElement = DOM_AVAILABLE ? document.getElementById("continue-button") : null;
 const saveButtonElement = DOM_AVAILABLE ? document.getElementById("save-button") : null;
 const loadButtonElement = DOM_AVAILABLE ? document.getElementById("load-button") : null;
+const undoButtonElement = DOM_AVAILABLE ? document.getElementById("undo-button") : null;
 const difficultySwitchElement = DOM_AVAILABLE ? document.getElementById("difficulty-switch") : null;
 const modeInputElements = DOM_AVAILABLE
   ? document.querySelectorAll('input[name="game-mode"]')
@@ -173,6 +174,7 @@ const state = {
   isAiThinking: false,
   aiTimerId: null,
   enPassantTarget: null,
+  gameHistory: [],
 };
 
 function createPiece(type, side, moved = false) {
@@ -214,6 +216,32 @@ function getGameSnapshot(sourceState = state) {
   };
 }
 
+function createHistorySnapshot() {
+  return {
+    board: cloneBoard(state.board),
+    currentPlayer: state.currentPlayer,
+    winner: state.winner,
+    lastMove: state.lastMove ? JSON.parse(JSON.stringify(state.lastMove)) : null,
+    isPaused: state.isPaused,
+    enPassantTarget: state.enPassantTarget ? { ...state.enPassantTarget } : null,
+  };
+}
+
+function pushHistorySnapshot() {
+  state.gameHistory.push(createHistorySnapshot());
+}
+
+function restoreHistorySnapshot(snapshot) {
+  state.board = cloneBoard(snapshot.board);
+  state.currentPlayer = snapshot.currentPlayer || "white";
+  state.winner = snapshot.winner || null;
+  state.lastMove = snapshot.lastMove || null;
+  state.isPaused = Boolean(snapshot.isPaused);
+  state.isAiThinking = false;
+  state.enPassantTarget = snapshot.enPassantTarget || null;
+  clearSelection();
+}
+
 function resetGame() {
   cancelAiTurn();
   state.board = createInitialBoard();
@@ -227,6 +255,7 @@ function resetGame() {
   state.lastMove = null;
   state.isPaused = false;
   state.enPassantTarget = null;
+  state.gameHistory = [];
   syncModeInputs();
   saveGame(true);
   render();
@@ -269,6 +298,10 @@ function renderControls() {
   continueButtonElement.disabled = Boolean(state.winner || !state.isPaused);
   saveButtonElement.disabled = false;
   loadButtonElement.disabled = !hasSavedGame();
+
+  if (undoButtonElement) {
+    undoButtonElement.disabled = state.gameHistory.length === 0;
+  }
 }
 
 function renderBoard() {
@@ -420,6 +453,7 @@ function applyMove(from, move) {
     return;
   }
 
+  pushHistorySnapshot();
   state.board = analysis.game.board;
   state.currentPlayer = analysis.game.currentPlayer;
   state.enPassantTarget = analysis.game.enPassantTarget;
@@ -1332,6 +1366,31 @@ function setAIDifficulty(level) {
   render();
 }
 
+function undoMove() {
+  if (state.gameHistory.length === 0) {
+    state.status = "No moves to undo.";
+    render();
+    return;
+  }
+
+  cancelAiTurn();
+  const undoCount = state.mode === "ai" && state.currentPlayer === "white" && state.gameHistory.length >= 2
+    ? 2
+    : 1;
+  let snapshot = null;
+
+  for (let index = 0; index < undoCount; index += 1) {
+    snapshot = state.gameHistory.pop();
+  }
+
+  restoreHistorySnapshot(snapshot);
+  state.status = undoCount === 2
+    ? "Undid your move and the AI reply."
+    : "Undid the last move.";
+  saveGame(true);
+  render();
+}
+
 function pauseGame() {
   if (state.winner || state.isPaused) {
     return;
@@ -1376,6 +1435,7 @@ function serializeGame() {
     lastMove: state.lastMove,
     isPaused: state.isPaused,
     enPassantTarget: state.enPassantTarget,
+    gameHistory: state.gameHistory,
     savedAt: new Date().toISOString(),
   };
 }
@@ -1462,6 +1522,7 @@ function loadGame() {
     state.isPaused = migrated.isPaused;
     state.isAiThinking = false;
     state.enPassantTarget = migrated.enPassantTarget;
+    state.gameHistory = migrated.gameHistory;
     syncModeInputs();
 
     if (!state.winner) {
@@ -1525,6 +1586,7 @@ function migrateSaveData(saved) {
     isPaused: Boolean(saved.isPaused),
     enPassantTarget: normalizeEnPassantTarget(saved.enPassantTarget, board)
       || inferLegacyEnPassantTarget(board, saved.lastMove),
+    gameHistory: normalizeGameHistory(saved.gameHistory),
   };
 }
 
@@ -1634,6 +1696,35 @@ function normalizeLastMove(lastMove) {
   const to = normalizeSquare(lastMove.to);
 
   return from && to ? { from, to } : null;
+}
+
+function normalizeGameHistory(history) {
+  if (!Array.isArray(history)) {
+    return [];
+  }
+
+  return history.reduce((snapshots, snapshot) => {
+    if (!snapshot || typeof snapshot !== "object") {
+      return snapshots;
+    }
+
+    const board = normalizeBoard(snapshot.board);
+
+    if (!board || !hasExactlyOneKingPerSide(board)) {
+      return snapshots;
+    }
+
+    snapshots.push({
+      board,
+      currentPlayer: normalizeSide(snapshot.currentPlayer) || "white",
+      winner: ["white", "black", "draw"].includes(snapshot.winner) ? snapshot.winner : null,
+      lastMove: normalizeLastMove(snapshot.lastMove),
+      isPaused: Boolean(snapshot.isPaused),
+      enPassantTarget: normalizeEnPassantTarget(snapshot.enPassantTarget, board),
+    });
+
+    return snapshots;
+  }, []);
 }
 
 function normalizeSquare(square) {
@@ -1848,6 +1939,9 @@ if (DOM_AVAILABLE) {
   continueButtonElement.addEventListener("click", continueGame);
   saveButtonElement.addEventListener("click", () => saveGame(false));
   loadButtonElement.addEventListener("click", loadGame);
+  if (undoButtonElement) {
+    undoButtonElement.addEventListener("click", undoMove);
+  }
   window.addEventListener("beforeunload", () => saveGame(true));
   Array.from(modeInputElements).forEach((input) => {
     input.addEventListener("change", () => {
@@ -1879,6 +1973,7 @@ if (typeof globalThis !== "undefined") {
     getAllLegalMoves,
     isInCheck,
     evaluateMoveOutcome,
+    undoMove,
     setAIDifficulty,
     AI_DIFFICULTY_LEVELS,
     runSelfTests,
@@ -1894,6 +1989,7 @@ if (typeof module !== "undefined" && module.exports) {
     getAllLegalMoves,
     isInCheck,
     evaluateMoveOutcome,
+    undoMove,
     setAIDifficulty,
     AI_DIFFICULTY_LEVELS,
     runSelfTests,

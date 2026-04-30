@@ -57,6 +57,7 @@
           <button id="continue-button" class="control-button" type="button">Continue</button>
           <button id="save-button" class="control-button" type="button">Save</button>
           <button id="load-button" class="control-button" type="button">Load</button>
+          <button id="undo-button" class="control-button" type="button">Undo Move</button>
           <button id="restart-button" class="restart-button" type="button">Restart</button>
         </div>
       </div>
@@ -92,7 +93,7 @@
             <li>You cannot make a move that leaves your own King in check. Kings are not captured as legal moves.</li>
             <li>Checks are announced in the status bar. Checkmate ends the game with GAME OVER and the winner text: White win or Black win.</li>
             <li>If no legal move exists without check, the game is a stalemate draw.</li>
-            <li>Use Pause to freeze the board, Continue to resume, Save to store progress, and Load to continue later.</li>
+            <li>Use Pause to freeze the board, Continue to resume, Save/Load to store progress, and Undo Move to go back. In AI mode, Undo removes the AI reply and your previous move together.</li>
           </ul>
         </section>
 
