@@ -104,6 +104,40 @@ const PIECES = {
   },
 };
 
+const AI_DIFFICULTY_LEVELS = {
+  beginner: {
+    name: "Beginner",
+    description: "Very Easy",
+    depth: 1,
+    randomMoveChance: 0.7,
+  },
+  medium: {
+    name: "Medium",
+    description: "Easy",
+    depth: 2,
+    randomMoveChance: 0.4,
+  },
+  hard: {
+    name: "Hard",
+    description: "Hard",
+    depth: 3,
+    randomMoveChance: 0.15,
+  },
+  master: {
+    name: "Master",
+    description: "Very Hard",
+    depth: 4,
+    randomMoveChance: 0,
+  },
+};
+
+const AI_SEARCH_LIMITS = {
+  1: 40,
+  2: 22,
+  3: 16,
+  4: 12,
+};
+
 const DOM_AVAILABLE = typeof document !== "undefined";
 const WINDOW_AVAILABLE = typeof window !== "undefined";
 const STORAGE_AVAILABLE = typeof localStorage !== "undefined";
@@ -119,6 +153,9 @@ const loadButtonElement = DOM_AVAILABLE ? document.getElementById("load-button")
 const modeInputElements = DOM_AVAILABLE
   ? document.querySelectorAll('input[name="game-mode"]')
   : [];
+const difficultyInputElements = DOM_AVAILABLE
+  ? document.querySelectorAll('input[name="ai-difficulty"]')
+  : [];
 
 const state = {
   board: createInitialBoard(),
@@ -127,6 +164,7 @@ const state = {
   legalMoves: [],
   pseudoMoves: [],
   mode: "local",
+  aiDifficulty: "beginner",
   status: "White moves first.",
   winner: null,
   lastMove: null,
@@ -1039,11 +1077,24 @@ function performAiTurn() {
 function chooseAiMove() {
   const game = getGameSnapshot();
   const legalMoves = getAllLegalMoves(game, "black");
+  const difficulty = getSelectedAIDifficulty();
 
   if (!legalMoves.length) {
     return null;
   }
 
+  if (Math.random() < difficulty.randomMoveChance) {
+    return legalMoves[Math.floor(Math.random() * legalMoves.length)];
+  }
+
+  if (difficulty.depth <= 1) {
+    return chooseBestImmediateMove(game, legalMoves);
+  }
+
+  return chooseBestSearchMove(game, legalMoves, difficulty);
+}
+
+function chooseBestImmediateMove(game, legalMoves) {
   return legalMoves.reduce((best, candidate) => {
     const score = scoreAiMove(game, candidate);
 
@@ -1105,6 +1156,118 @@ function scoreAiMove(game, candidate) {
   return score;
 }
 
+function chooseBestSearchMove(game, legalMoves, difficulty) {
+  const orderedMoves = orderAiCandidates(game, legalMoves, difficulty.depth);
+
+  return orderedMoves.reduce((best, candidate) => {
+    const nextGame = applyMoveToGame(game, candidate.from, candidate.move);
+    const score = minimax(nextGame, difficulty.depth - 1, -Infinity, Infinity, false);
+    const adjustedScore = score + Math.random() * 0.01;
+
+    if (!best || adjustedScore > best.score) {
+      return {
+        ...candidate,
+        score: adjustedScore,
+      };
+    }
+
+    return best;
+  }, null);
+}
+
+function minimax(game, depth, alpha, beta, blackToMove) {
+  const side = blackToMove ? "black" : "white";
+  const legalMoves = getAllLegalMoves(game, side);
+
+  if (!legalMoves.length) {
+    if (isInCheck(game, side)) {
+      return side === "black" ? -1000000 - depth : 1000000 + depth;
+    }
+
+    return 0;
+  }
+
+  if (depth <= 0) {
+    return evaluatePosition(game);
+  }
+
+  const orderedMoves = orderAiCandidates(game, legalMoves, depth);
+
+  if (blackToMove) {
+    let bestScore = -Infinity;
+
+    for (const candidate of orderedMoves) {
+      const nextGame = applyMoveToGame(game, candidate.from, candidate.move);
+      bestScore = Math.max(bestScore, minimax(nextGame, depth - 1, alpha, beta, false));
+      alpha = Math.max(alpha, bestScore);
+
+      if (beta <= alpha) {
+        break;
+      }
+    }
+
+    return bestScore;
+  }
+
+  let bestScore = Infinity;
+
+  for (const candidate of orderedMoves) {
+    const nextGame = applyMoveToGame(game, candidate.from, candidate.move);
+    bestScore = Math.min(bestScore, minimax(nextGame, depth - 1, alpha, beta, true));
+    beta = Math.min(beta, bestScore);
+
+    if (beta <= alpha) {
+      break;
+    }
+  }
+
+  return bestScore;
+}
+
+function orderAiCandidates(game, legalMoves, depth) {
+  const limit = AI_SEARCH_LIMITS[Math.max(1, Math.min(4, depth))] || 12;
+
+  return legalMoves
+    .map((candidate) => ({
+      ...candidate,
+      orderScore: scoreAiMove(game, candidate),
+    }))
+    .sort((a, b) => b.orderScore - a.orderScore)
+    .slice(0, limit);
+}
+
+function evaluatePosition(game) {
+  let score = 0;
+
+  for (let row = 0; row < BOARD_SIZE; row += 1) {
+    for (let col = 0; col < BOARD_SIZE; col += 1) {
+      const piece = game.board[row][col];
+
+      if (!piece) {
+        continue;
+      }
+
+      const sideMultiplier = piece.side === "black" ? 1 : -1;
+      score += sideMultiplier * PIECES[piece.type].value;
+      score += sideMultiplier * getCenterScore(row, col) * 4;
+
+      if (piece.type === "pawn") {
+        score += piece.side === "black" ? row * 8 : (7 - row) * -8;
+      }
+    }
+  }
+
+  if (isInCheck(game, "white")) {
+    score += 45;
+  }
+
+  if (isInCheck(game, "black")) {
+    score -= 45;
+  }
+
+  return score;
+}
+
 function getCenterScore(row, col) {
   const distanceFromCenter = Math.abs(3.5 - row) + Math.abs(3.5 - col);
   return 4 - distanceFromCenter / 2;
@@ -1126,6 +1289,14 @@ function syncModeInputs() {
   Array.from(modeInputElements).forEach((input) => {
     input.checked = input.value === state.mode;
   });
+
+  syncDifficultyInputs();
+}
+
+function syncDifficultyInputs() {
+  Array.from(difficultyInputElements).forEach((input) => {
+    input.checked = input.value === state.aiDifficulty;
+  });
 }
 
 function setGameMode(mode) {
@@ -1136,6 +1307,24 @@ function setGameMode(mode) {
 
   state.mode = mode;
   resetGame();
+}
+
+function getSelectedAIDifficulty() {
+  return AI_DIFFICULTY_LEVELS[state.aiDifficulty] || AI_DIFFICULTY_LEVELS.beginner;
+}
+
+function setAIDifficulty(level) {
+  if (!AI_DIFFICULTY_LEVELS[level]) {
+    syncDifficultyInputs();
+    return;
+  }
+
+  state.aiDifficulty = level;
+  const difficulty = getSelectedAIDifficulty();
+  state.status = `AI Level: ${difficulty.name}. Mode: ${difficulty.description}.`;
+  saveGame(true);
+  syncDifficultyInputs();
+  render();
 }
 
 function pauseGame() {
@@ -1176,6 +1365,7 @@ function serializeGame() {
     board: state.board,
     currentPlayer: state.currentPlayer,
     mode: state.mode,
+    aiDifficulty: state.aiDifficulty,
     status: state.status,
     winner: state.winner,
     lastMove: state.lastMove,
@@ -1258,6 +1448,7 @@ function loadGame() {
     state.board = migrated.board;
     state.currentPlayer = migrated.currentPlayer;
     state.mode = migrated.mode;
+    state.aiDifficulty = migrated.aiDifficulty;
     state.selected = null;
     state.legalMoves = [];
     state.pseudoMoves = [];
@@ -1323,6 +1514,7 @@ function migrateSaveData(saved) {
     board,
     currentPlayer: normalizeSide(saved.currentPlayer) || "white",
     mode: saved.mode === "ai" ? "ai" : "local",
+    aiDifficulty: AI_DIFFICULTY_LEVELS[saved.aiDifficulty] ? saved.aiDifficulty : "beginner",
     winner: ["white", "black", "draw"].includes(saved.winner) ? saved.winner : null,
     lastMove: normalizeLastMove(saved.lastMove),
     isPaused: Boolean(saved.isPaused),
@@ -1659,6 +1851,13 @@ if (DOM_AVAILABLE) {
       }
     });
   });
+  Array.from(difficultyInputElements).forEach((input) => {
+    input.addEventListener("change", () => {
+      if (input.checked) {
+        setAIDifficulty(input.value);
+      }
+    });
+  });
 
   if (!loadGame()) {
     resetGame();
@@ -1666,6 +1865,7 @@ if (DOM_AVAILABLE) {
 }
 
 if (typeof globalThis !== "undefined") {
+  globalThis.setAIDifficulty = setAIDifficulty;
   globalThis.ZchessEngine = {
     createInitialBoard,
     createTestGame,
@@ -1674,6 +1874,8 @@ if (typeof globalThis !== "undefined") {
     getAllLegalMoves,
     isInCheck,
     evaluateMoveOutcome,
+    setAIDifficulty,
+    AI_DIFFICULTY_LEVELS,
     runSelfTests,
   };
 }
@@ -1687,6 +1889,8 @@ if (typeof module !== "undefined" && module.exports) {
     getAllLegalMoves,
     isInCheck,
     evaluateMoveOutcome,
+    setAIDifficulty,
+    AI_DIFFICULTY_LEVELS,
     runSelfTests,
   };
 }

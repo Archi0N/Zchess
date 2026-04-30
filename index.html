@@ -31,6 +31,27 @@
             </label>
           </div>
         </fieldset>
+        <fieldset class="difficulty-switch">
+          <legend>AI Difficulty</legend>
+          <div class="difficulty-options" role="radiogroup" aria-label="AI difficulty">
+            <label class="difficulty-option">
+              <input type="radio" name="ai-difficulty" value="beginner" checked>
+              <span>Beginner <small>Very Easy</small></span>
+            </label>
+            <label class="difficulty-option">
+              <input type="radio" name="ai-difficulty" value="medium">
+              <span>Medium <small>Easy</small></span>
+            </label>
+            <label class="difficulty-option">
+              <input type="radio" name="ai-difficulty" value="hard">
+              <span>Hard <small>Hard</small></span>
+            </label>
+            <label class="difficulty-option">
+              <input type="radio" name="ai-difficulty" value="master">
+              <span>Master <small>Very Hard</small></span>
+            </label>
+          </div>
+        </fieldset>
         <div class="match-actions" aria-label="Match controls">
           <button id="pause-button" class="control-button" type="button">Pause</button>
           <button id="continue-button" class="control-button" type="button">Continue</button>
@@ -63,7 +84,7 @@
         <section class="panel">
           <h2>Rules</h2>
           <ul class="rules-list">
-            <li>White moves first. In Play vs AI, you control White and Black replies automatically.</li>
+            <li>White moves first. In Play vs AI, you control White and choose Black AI difficulty: Beginner, Medium, Hard, or Master.</li>
             <li>Click one of your pieces, then a highlighted destination.</li>
             <li>Pieces use standard chess movement: pawns move forward, capture diagonally, may advance two squares on their first move, and auto-promote to a Queen on the back rank.</li>
             <li>Rooks, bishops, and queens slide. Knights jump. Kings move one square, and castling is allowed only when the King and rook are unmoved, the path is clear, and the King does not move through check.</li>
